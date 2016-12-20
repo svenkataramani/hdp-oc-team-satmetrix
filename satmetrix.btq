@@ -1,0 +1,56 @@
+.SET ECHOREQ ON
+.SET ERROROUT STDOUT
+.SET WIDTH 256
+
+
+.LOGON godaddy3.prod.phx3.gdg/P_BTCH_HadoopImp,P_BTCH_HadoopImp;
+
+SELECT TOP 1 * FROM P_HadoopImp_S.ShopNPSURL_STG;
+
+.IF ACTIVITYCOUNT = 0 THEN .GOTO E086
+
+SELECT TOP 1 * FROM P_ARM_IMPORT.ShopNPSURL;
+
+.IF ACTIVITYCOUNT = 0 THEN .GOTO CreateTable;
+
+DROP TABLE P_ARM_IMPORT.ShopNPSURL;
+
+.IF ERRORCODE <> 0 THEN .GOTO E003
+
+.LABEL CreateTable;
+
+create multiset table P_ARM_IMPORT.ShopNPSURL as(
+SELECT 
+ShopAcctID,
+ShopNPSURL as NPSURL,
+LoadDt
+FROM P_HadoopImp_S.ShopNPSURL_STG)
+with data
+primary index(ShopAcctID);
+
+.IF ERRORCODE <> 0 THEN .GOTO E003
+
+COLLECT STATS P_ARM_IMPORT.ShopNPSURL COLUMN(ShopAcctID);
+
+.IF ERRORCODE <> 0 THEN .GOTO E003
+
+--DELETE P_HADOOPIMP_S.ShopNPSURL_STG ALL;
+
+--.IF ERRORCODE <> 0 THEN .GOTO E003
+
+------------------------------------------------------------------------
+--  086 - Good exit
+------------------------------------------------------------------------
+
+.LABEL E086
+.LOGOFF
+.QUIT
+
+
+------------------------------------------------------------------------
+--  E003 - Error exit
+------------------------------------------------------------------------
+     
+.LABEL E003
+.LOGOFF
+.QUIT 16 
